@@ -36,6 +36,7 @@ __docformat__ = 'restructedtext en'
 
 from conf import *
 from helpers import Logger
+from printer import *
 
 import cPickle
 import gzip
@@ -48,7 +49,9 @@ import numpy
 import theano
 import theano.tensor as T
 
-log = Logger(SGD_LOG_FILE, V_INFO)
+if not os.path.isdir(LOG_DIR):
+    os.makedirs(LOG_DIR)
+log = Logger(SGD_LOG_FILE, V_WARN, real_time = False)
 
 class LogisticRegression(object):
     """Multi-class Logistic Regression Class
@@ -211,7 +214,6 @@ def load_data(dataset):
     # Load the dataset
     f = gzip.open(dataset, 'rb')
     train_set, valid_set, test_set = cPickle.load(f)
-    log.debug('[MAIN THREAD] [LOAD DATA] train set size: {}'.format(train_set[0].size))
     f.close()
     #train_set, valid_set, test_set format: tuple(input, target)
     #input is an numpy.ndarray of 2 dimensions (a matrix)
@@ -375,7 +377,53 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
 
     done_looping = False
     epoch = 0
+
+
+    ###
+    ###     Debug var init
+    ###
+
+    tmp_w_print = classifier.W.get_value()
+    tmp_b_print = classifier.b.get_value()
+
+    im_index = 0
+    im_shape = (28,28)
+    w_shape = im_shape
+
+    log.debug('[MAIN THREAD] tmp_w_print type: {}'.format(type(tmp_w_print)))
+    log.debug('[MAIN THREAD] tmp_w_print shape: {}'.format(tmp_w_print.shape))
+    log.debug('[MAIN THREAD] tmp_b_print type: {}'.format(type(tmp_b_print)))
+    log.debug('[MAIN THREAD] tmp_b_print shape: {}'.format(tmp_b_print.shape))
+
+    print_dico = {}
+    for i in range(tmp_w_print.shape[1]):
+        i_th_filter = tmp_w_print[:,i]
+        log.debug('[MAIN THREAD] i_th_filter type: {}'.format(type(i_th_filter)))
+        log.debug('[MAIN THREAD] i_th_filter shape: {}'.format(i_th_filter.shape))
+        print_dico[str(i)] = i_th_filter.reshape(w_shape)
+        log.debug('[MAIN THREAD] print_dico[str(i)].shape: {}'.format(print_dico[str(i)].shape))
+
+    init_dico = {}
+    for keys in print_dico:
+        init_dico[keys] = print_dico[keys].shape
+    print_data = fast_init_image(init_dico)
+    print_image_fast(print_dico, print_data)
+
+
+    #reshaped_im = train_array[im_index].reshape(im_shape)
+
+    #log.debug('[MAIN THREAD] reshaped_im type: {}'.format(type(reshaped_im)))
+    #log.debug('[MAIN THREAD] train_array[0] shape: {}'.format(reshaped_im.shape))
+
+    #print_dico = {'test_image': reshaped_im}
+    #init_dico = {'test_image': reshaped_im.shape}
+    #print_data = fast_init_image(init_dico)
+    #print_image_fast(print_dico, print_data)
+
+
+
     while (epoch < n_epochs) and (not done_looping):
+        
         epoch = epoch + 1
         for minibatch_index in xrange(n_train_batches):
 
@@ -398,7 +446,15 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
                         this_validation_loss * 100.
                     )
                 )
+                tmp_w_print = classifier.W.get_value()
+                for i in range(tmp_w_print.shape[1]):
+                    i_th_filter = tmp_w_print[:,i]
+                    log.debug('[MAIN THREAD] i_th_filter type: {}'.format(type(i_th_filter)))
+                    log.debug('[MAIN THREAD] i_th_filter shape: {}'.format(i_th_filter.shape))
+                    print_dico[str(i)] = i_th_filter.reshape(w_shape)
+                    log.debug('[MAIN THREAD] print_dico[str(i)].shape: {}'.format(print_dico[str(i)].shape))
 
+                print_image_fast(print_dico, print_data)
                 # if we got the best validation score until now
                 if this_validation_loss < best_validation_loss:
                     #improve patience if loss improvement is good enough
@@ -475,10 +531,53 @@ def predict():
 
 
 def test():
-    dataset='mnist.pkl.gz'
-    datasets = load_data(dataset)
+    data_file='mnist.pkl.gz'
+    im_index = 0
+    im_shape = (28,28)
 
+    dataset = load_data(data_file)
+
+    train_set_x, train_set_y = dataset[0]
+    valid_set_x, valid_set_y = dataset[1]
+    test_set_x, test_set_y = dataset[2]
+
+    #log.debug('[MAIN THREAD] train_set len: {}'.format(len(dataset)))
+    log.debug('[MAIN THREAD] train_set_x type: {}'.format(type(train_set_x)))
+    log.debug('[MAIN THREAD] train_set_x shape: {}'.format(train_set_x.shape))
+    train_array = train_set_x.get_value()
+    log.debug('[MAIN THREAD] train_array type: {}'.format(type(train_array)))
+    log.debug('[MAIN THREAD] train_array shape: {}'.format(train_array.shape))
+    log.debug('[MAIN THREAD] train_array[0] type: {}'.format(type(train_array[im_index])))
+    log.debug('[MAIN THREAD] train_array[0] shape: {}'.format(train_array[im_index].shape))
+
+    reshaped_im = train_array[im_index].reshape(im_shape)
+
+    log.debug('[MAIN THREAD] reshaped_im type: {}'.format(type(reshaped_im)))
+    log.debug('[MAIN THREAD] train_array[0] shape: {}'.format(reshaped_im.shape))
+
+    print_dico = {'test_image': reshaped_im}
+    init_dico = {'test_image': reshaped_im.shape}
+    print_data = fast_init_image(init_dico)
+    print_image_fast(print_dico, print_data)
+
+    import time
+    time.sleep(10)
 
 if __name__ == '__main__':
-    #sgd_optimization_mnist()
-    test()
+    sgd_optimization_mnist()
+    #test()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
