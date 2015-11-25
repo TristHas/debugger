@@ -10,7 +10,7 @@ N_COL = 2
 PRINT_AXIS = range(15)
 
 PRINT_LOG_FILE = os.path.join(LOCAL_DATA_DIR, 'printer.log')
-log = Logger(PRINT_LOG_FILE, V_WARN, real_time = False)
+log = Logger(PRINT_LOG_FILE, V_DEBUG, real_time = True)
 
 def multi_init_fast(data):
     print_data = {}
@@ -86,7 +86,7 @@ def print_dic_fast(dico, (fig, ax, lines, backgrounds)):
         xdata = range(len(ydata))
         log.debug('Before drawing')
         fig.canvas.restore_region(backgrounds[ind])
-        lines[ind].set_data(xdata,ydata)#
+        lines[ind].set_data(xdata,ydata)
         log.debug([ax[ind]])
         log.debug([fig])
         ax[ind].draw_artist(lines[ind])
@@ -107,7 +107,7 @@ def fast_init_image(dico):
     n_elem = len(dico)
     log.debug('len({})= {}'.format(dico, n_elem))
     n_col = N_COL
-
+    plt.ion()
     if n_elem % n_col == 0:
         n_raw = int(n_elem / n_col)
     else:
@@ -115,7 +115,10 @@ def fast_init_image(dico):
 
     fig, ax = plt.subplots(n_raw,n_col)
     fig.show()
+    #fig.set_cmap('bwr')
+
     fig.canvas.draw()
+
 
     ind = 0
     keys = dico.keys()
@@ -137,9 +140,10 @@ def fast_init_image(dico):
 
             column.set_title(keys[ind])
             dummy_image = np.random.rand(*dico[keys[ind]])
-            column.imshow(dummy_image,  animated=True) # cmap = 'Greys',
+            column.imshow(dummy_image, cmap = 'bwr',animated=True) #cmap = 'Greys',
             log.debug(column.images[0].get_array())
-
+            log.debug(column)
+            #column.draw(column.images[0])
             backgrounds = fig.canvas.copy_from_bbox(column.bbox)
             background_ret.append(backgrounds)
 
@@ -150,7 +154,7 @@ def fast_init_image(dico):
                 log.verb('breaking')
                 break
     fig.canvas.draw()
-    #fig.canvas.flush_events()
+    fig.canvas.flush_events()
     return fig, ax_ret, background_ret
 
 ### Very poor argument passing scheme, should do better
@@ -158,10 +162,13 @@ def print_image_fast(dico, (fig, ax, backgrounds)):
     log.verb('Printing: {}'.format(dico))
     keys = dico.keys()
     for ind in range(len(keys)):
+        log.debug([ax[ind]])
         log.debug('back in loop')
-
+        log.debug('dir(ax[ind]) {}'.format(dir(ax[ind])))
+        log.debug('ax[ind].images[0].get_array {}'.format(ax[ind].images[0].get_array()))
         ax[ind].images[0].set_array(dico[keys[ind]])
-        log.debug('Before drawing')
+        log.debug('Before drawing {}'.format(keys[ind]))
+        log.debug(dir(ax[ind].images[0]))
         #fig.canvas.restore_region(backgrounds[ind])
         ax[ind].draw_artist(ax[ind].images[0])
         log.debug('len(ax[ind].images) : {}'.format(len(ax[ind].images)))
