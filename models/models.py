@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from layers import LogisticLayer
+from layers import fullyConnectedLayer
 import numpy as np
 from ..debug.util.helpers import Logger
 from ..debug.util.conf import *
-
+from theano import tensor as T
 
 #
 #
@@ -33,7 +33,6 @@ class LogisticModel(object):
         self.l_1 = fullyConnectedLayer(input, n_in, n_out)
         # Only one layer here
 
-
         ####
         ####        WEIGHT
         ####
@@ -44,9 +43,10 @@ class LogisticModel(object):
         self.struct = {'l_1': [False, self.l_1, weight_shape]}
 
         # Selects the index of the highest p_y_given_x
-        self.pred = T.argmax(self.p_y_given_x, axis=1)
         self.input = input
         self.output = T.nnet.softmax(T.dot(input, self.W) + self.b)
+        self.pred = T.argmax(self.output, axis=1)
+
 
     def add_targets(self, targets = None):
         for tagret in targets:

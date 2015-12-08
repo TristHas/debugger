@@ -1,5 +1,5 @@
 from vispy import app, use, gloo
-use(app = 'PyQt5')
+#use(app = 'PyQt5')
 import numpy as np
 import time, threading, Queue
 
