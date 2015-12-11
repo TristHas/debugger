@@ -3,7 +3,6 @@
 
 from ..debug.util.conf import *
 from ..debug.util.helpers import Logger
-from ..debug.util.mnist_loader import load_data
 from models import LogisticModel
 
 import theano.tensor as T
@@ -42,7 +41,7 @@ class NLL_Trainer(object):
         updates = [(model.W, model.W - learning_rate * g_W),
                    (model.b, model.b - learning_rate * g_b)]
 
-        train_model = theano.function(
+        self.train_model = theano.function(
             inputs=[index],
             outputs=cost,
             updates=updates,
@@ -73,24 +72,6 @@ class NLL_Trainer(object):
     def errors(self, y):
         assert y.ndim == self.model.pred.ndim
         return T.mean(T.neq(self.model.pred, y))
-
-if __name__ == '__main__':
-    datasets = load_data('mnist.pkl.gz')
-    batch_size=600
-    train_set = datasets[0]
-    valid_set = datasets[1]
-    test_set = datasets[2]
-
-    model = LogisticModel(input=x, input_shape=28 * 28, n_out=10)
-    trainer = NLL_Trainer(model, train_set, valid_set, test_set)
-
-    n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
-    n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] / batch_size
-    n_test_batches = test_set_x.get_value(borrow=True).shape[0] / batch_size
-
-    index = T.lscalar()  # index to a [mini]batch
-    x = T.matrix('x')  # data, presented as rasterized images
-    y = T.ivector('y')  # labels, presented as 1D vector of [int] labels
 
 
 
