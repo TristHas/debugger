@@ -6,8 +6,7 @@ from ..debug.util.helpers import Logger
 from ..debug.util.conf import *
 from theano import tensor as T
 
-#
-#
+
 #   A model should define the following functions:
 #
 #       - add_targets
@@ -17,20 +16,19 @@ from theano import tensor as T
 #   Furthermore, it should present the following arguments
 #       - W
 #       - b
-#
-#
 
 
 class LogisticModel(object):
-    def __init__(self, input, input_shape, n_out):
+    def __init__(self, input_shape, n_out):
         self.log = Logger(SGD_LOG_FILE)#, V_DEBUG)
         n_in = np.prod(input_shape)
+        self.input = T.matrix('x')
 
         # Build model architecture
         ####
         ####        ARCH
         ####
-        self.l_1 = fullyConnectedLayer(input, n_in, n_out)
+        self.l_1 = fullyConnectedLayer(self.input, n_in, n_out)
         # Only one layer here
 
         ####
@@ -43,10 +41,8 @@ class LogisticModel(object):
         self.struct = {'l_1': [False, self.l_1, weight_shape]}
 
         # Selects the index of the highest p_y_given_x
-        self.input = input
-        self.output = T.nnet.softmax(T.dot(input, self.W) + self.b)
+        self.output = T.nnet.softmax(T.dot(self.input, self.W) + self.b)
         self.pred = T.argmax(self.output, axis=1)
-
 
     def add_targets(self, targets = None):
         for tagret in targets:
@@ -68,6 +64,7 @@ class LogisticModel(object):
         dico = {}
         for layer in self.struct:
             if self.struct[layer][0] == True:
+                ### Should reshape weights here?
                 dico[layer] = self.struct[layer][1].get_weights().reshape(self.struct[layer][2])
         return dico
 
