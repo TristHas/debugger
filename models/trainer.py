@@ -3,7 +3,7 @@
 
 import os
 import sys
-import timeit
+import timeit, time
 import threading
 
 import theano.tensor as T
@@ -19,9 +19,10 @@ class NLL_Trainer(object):
     def __init__(self, transmit, model, train_set, valid_set, test_set, batch_size = 600, learning_rate = 0.13, cost = None, test_func = None):
         """
         """
-
         self.transmit   = transmit
+        self.is_recording = False
         self.is_paused  = False
+        self.is_running = False
 
         self.labels = T.ivector('y')        # labels, presented as 1D vector of [int] labels
         self.index = T.lscalar()            # index to a [mini]batch
@@ -29,6 +30,15 @@ class NLL_Trainer(object):
         self.valid_set = valid_set
         self.test_set = test_set
         self.batch_size = batch_size
+
+        self.n_train_batches = self.train_set[0].get_value(borrow=True).shape[0] / self.batch_size
+        self.n_valid_batches = self.valid_set[0].get_value(borrow=True).shape[0] / self.batch_size
+        self.n_test_batches = self.test_set[0].get_value(borrow=True).shape[0] / self.batch_size
+
+        self.validation_frequency = self.n_train_batches
+        self.record_frequency     = self.n_train_batches
+        self.improvement_step_threshold = 0.0001
+        self.n_epochs=1000
 
         if not test_func:
             test_func = self.errors
@@ -74,28 +84,19 @@ class NLL_Trainer(object):
 
     def training_process(self):
         ### Should be updated with changes in batch_size
-        n_train_batches = self.train_set[0].get_value(borrow=True).shape[0] / self.batch_size
-        n_valid_batches = self.valid_set[0].get_value(borrow=True).shape[0] / self.batch_size
-        n_test_batches = self.test_set[0].get_value(borrow=True).shape[0] / self.batch_size
-
-        self.validation_frequency = n_train_batches
-        self.record_frequency     = n_train_batches
-        self.improvement_step_threshold = 0.0001
-        self.n_epochs=1000
-        self.done_looping = False
 
         best_validation_loss = numpy.inf
         test_score = 0.
         start_time = timeit.default_timer()
         epoch = 0
 
-        while (epoch < self.n_epochs) and (not self.done_looping):
+        while (epoch < self.n_epochs) and self.is_running:
             while self.is_paused:
                 time.sleep(1)
             epoch = epoch + 1
-            for minibatch_index in xrange(n_train_batches):
+            for minibatch_index in xrange(self.n_train_batches):
                 minibatch_avg_cost = self.train_model(minibatch_index)
-                iter = (epoch - 1) * n_train_batches + minibatch_index
+                iter = (epoch - 1) * self.n_train_batches + minibatch_index
 
                 if (iter + 1) % self.record_frequency == 0 and self.is_recording:
                     data = self.model.drop_weights()
@@ -103,7 +104,7 @@ class NLL_Trainer(object):
                         self.transmit.put(data)
 
                 if (iter + 1) % self.validation_frequency == 0:
-                    validation_losses = [self.validate_model(i) for i in xrange(n_valid_batches)]
+                    validation_losses = [self.validate_model(i) for i in xrange(self.n_valid_batches)]
                     this_validation_loss = numpy.mean(validation_losses)
 
                     print(
@@ -111,7 +112,7 @@ class NLL_Trainer(object):
                         (
                             epoch,
                             minibatch_index + 1,
-                            n_train_batches,
+                            self.n_train_batches,
                             this_validation_loss * 100.
                         )
                     )
@@ -120,10 +121,10 @@ class NLL_Trainer(object):
                     ####
                     if this_validation_loss < best_validation_loss:
                         if this_validation_loss > best_validation_loss - self.improvement_step_threshold:
-                            self.done_looping = True
+                            self.is_running = False
 
                         best_validation_loss = this_validation_loss
-                        test_losses = [self.test_model(i) for i in xrange(n_test_batches)]
+                        test_losses = [self.test_model(i) for i in xrange(self.n_test_batches)]
                         test_score = numpy.mean(test_losses)
 
                         print(
@@ -134,7 +135,7 @@ class NLL_Trainer(object):
                             (
                                 epoch,
                                 minibatch_index + 1,
-                                n_train_batches,
+                                self.n_train_batches,
                                 test_score * 100.
                             )
                         )
@@ -153,9 +154,13 @@ class NLL_Trainer(object):
                               os.path.split(__file__)[1] +
                               ' ran for %.1fs' % ((end_time - start_time)))
 
-    def launch_training(self):
+    def start_training(self):
+        self.is_running = True
         thread = threading.Thread(target = self.training_process, name = 'training process', args = ())
         thread.start()
+
+    def stop_training(self):
+        self.is_running = False
 
     def pause_training(self):
         self.is_paused  = True
@@ -167,11 +172,11 @@ class NLL_Trainer(object):
         assert self.labels.ndim == self.model.pred.ndim
         return T.mean(T.neq(self.model.pred, self.labels))
 
-    def add_targets(self, targets = None):
-        self.model.add_targets(targets)
+    def add_target(self, target = None):
+        return self.model.add_targets(target)
 
-    def remove_targets(self, targets = None):
-        self.model.remove_targets(targets)
+    def remove_target(self, target = None):
+        return self.model.remove_targets(target)
 
     def start_record(self):
         self.is_recording = True

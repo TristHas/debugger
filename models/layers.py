@@ -53,7 +53,7 @@ class fullyConnectedLayer(object):
         self.output = T.nnet.softmax(T.dot(self.input, self.W) + self.b)
 
     def get_weights(self):
-        temp = self.W.get_value()
+        return self.W.get_value()
 
     def get_biass(self):
-        temp = self.b.get_value()
+        return self.b.get_value()

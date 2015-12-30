@@ -9,7 +9,6 @@ from conf import *
 N_COL = 2
 PRINT_AXIS = range(15)
 
-PRINT_LOG_FILE = os.path.join(LOCAL_DATA_DIR, 'printer.log')
 log = Logger(PRINT_LOG_FILE, V_DEBUG, real_time = True)
 
 def multi_init_fast(data):

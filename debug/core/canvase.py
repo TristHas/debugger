@@ -1,12 +1,9 @@
-from vispy import app, use, gloo
-#use(app = 'PyQt5')
-import numpy as np
-import time, threading, Queue
-
-from ..theano_mnist_lgd import sgd_optimization_mnist
-from ..util.mnist_loader import load_data
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from ..util.helpers import Logger
 from ..util.conf import *
+from vispy import gloo, app
+import numpy as np
 
 log = Logger(PRINT_LOG_FILE, V_DEBUG, real_time = True)
 
@@ -21,7 +18,6 @@ base_index = np.tile(base_index, (m,1)).astype(np.float32)
 tex_index   = np.copy(base_index)
 tex_helper  = np.repeat(np.linspace(0,1,m),6)
 tex_index   = np.c_[ tex_index, tex_helper].astype(np.float32)
-
 
 table_index_x = np.repeat(np.repeat(np.arange(n_rows),6), n_col)
 table_index_y = np.tile(np.repeat(np.arange(n_col),6), n_rows)
@@ -71,37 +67,53 @@ void main()
 """
 
 class Canvas(app.Canvas):
-    def __init__(self):
+    def __init__(self, transmit):
         app.Canvas.__init__(self)
         # Theano synchronisation
-        self.ok = True
-        self.transmit = Queue.Queue()
-
+        self.running = False
+        self.printing = False
+        self.transmit = transmit
         # Program definition
         self._program = gloo.Program(VERT_SHADER, FRAG_SHADER)
-
         self._program['a_texindex'] = tex_index
         self._program['a_basindex'] = base_index
         self._program['a_tabindex'] = table_index
         self._program['u_tdim'] = np.asarray([1/n_rows, 1/n_col], dtype = np.float32)
         self._program['u_texture'] = np.random.rand(10,*image_dim).astype(np.float32)
-
         self.show()
 
-    def launch_training(self):
-        sgd_optimization_mnist(self.transmit)
-        self.ok = False
+    def start_print(self):
+        self.printing = True
 
-    def listen_and_print(self):
-        while self.ok:
+    def stop_printing(self):
+        self.printing = False
+
+    def stop_running(self):
+        self.running = False
+
+    def start_running(self):
+        if not self.running:
+            thr = threading.Thread(target = self.process_loop, args = ())
+            thr.start()
+            self.running = True
+
+    ####
+    ####    Internal Methods
+    ####
+    def process_loop(self):
+        while self.running:
             try:
                 data = self.transmit.get(timeout = 1)
-                tmp = [data[key] for key in data]
-                x = np.c_[tmp].astype(np.float32)
+                for layer in data:
+                    tmp = [data[layer][key] for key in data[layer]]
+                    x = np.c_[tmp].astype(np.float32)
                 log.debug('max(data)={}'.format(np.max(x)))
                 log.debug('min(data)={}'.format(np.min(x)))
-                self._program['u_texture'].set_data(x + 0.5)
-                self.update()
+                if self.printing:
+                    self._program['u_texture'].set_data(x + 0.5)
+                    self.update()
+                else:
+                    pass
             except Queue.Empty:
                 pass
 
@@ -112,21 +124,3 @@ class Canvas(app.Canvas):
     def on_resize(self, event):
         width, height = event.size
         gloo.set_viewport(0, 0, width, height)
-
-
-def main():
-    import sys
-    c = Canvas()
-    x = app.Application()
-    qt_app = x.native
-    thr = threading.Thread(target = c.launch_training, args = ())
-    thr.start()
-
-    thr_2 = threading.Thread(target = c.listen_and_print, args = ())
-    thr_2.start()
-
-    sys.exit(qt_app.exec_())
-
-if __name__ == '__main__':
-    main()
-

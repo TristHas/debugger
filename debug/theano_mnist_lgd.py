@@ -41,6 +41,7 @@ from util.mnist_loader import load_data
 import os
 import sys
 import timeit
+import cPickle
 
 import numpy
 import theano
@@ -96,7 +97,7 @@ class LogisticRegression(object):
         self.input = input
         self.params = [self.W, self.b]
         self.output = T.nnet.softmax(T.dot(self.input, self.W) + self.b)
-        self.pred = T.argmax(self.p_y_given_x, axis=1)
+        self.pred = T.argmax(self.output, axis=1)
 
 
     def negative_log_likelihood(self, y):
@@ -117,7 +118,7 @@ class LogisticRegression(object):
         Note: we use the mean instead of the sum so that
               the learning rate is less dependent on the batch size
         """
-        return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
+        return -T.mean(T.log(self.output)[T.arange(y.shape[0]), y])
 
     def errors(self, y):
         """Return a float representing the number of errors in the minibatch
@@ -128,13 +129,13 @@ class LogisticRegression(object):
         :param y: corresponds to a vector that gives for each example the
                   correct label
         """
-        if y.ndim != self.y_pred.ndim:
+        if y.ndim != self.pred.ndim:
             raise TypeError(
                 'y should have the same shape as self.y_pred',
-                ('y', y.type, 'y_pred', self.y_pred.type)
+                ('y', y.type, 'y_pred', self.pred.type)
             )
         if y.dtype.startswith('int'):
-            return T.mean(T.neq(self.y_pred, y))
+            return T.mean(T.neq(self.pred, y))
         else:
             raise NotImplementedError()
 
@@ -379,7 +380,7 @@ def predict():
     # compile a predictor function
     predict_model = theano.function(
         inputs=[classifier.input],
-        outputs=classifier.y_pred)
+        outputs=classifier.pred)
 
     # We can test it on some examples from test test
     dataset='mnist.pkl.gz'

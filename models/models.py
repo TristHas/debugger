@@ -44,27 +44,38 @@ class LogisticModel(object):
         self.output = T.nnet.softmax(T.dot(self.input, self.W) + self.b)
         self.pred = T.argmax(self.output, axis=1)
 
-    def add_targets(self, targets = None):
-        for tagret in targets:
-            if target in self.struct:
-                self.struct[target][0] = True
-                self.log.info('added target {}'.format(target))
-            else:
-                self.log.warn('asked to add target {} which does not exist'.format(target))
+    def add_targets(self, target = None):
+        if target in self.struct:
+            self.struct[target][0] = True
+            self.log.info('added target {}'.format(target))
+            return True
+        else:
+            self.log.warn('asked to add target {} which does not exist'.format(target))
+            return False
 
-    def remove_targets(self, targets):
-        for tagret in targets:
-            if target in self.struct:
-                self.struct[target][0] = False
-                self.log.info('added target {}'.format(target))
-            else:
-                self.log.warn('asked to add target {} which does not exist'.format(target))
+    def remove_targets(self, target):
+        if target in self.struct:
+            self.struct[target][0] = False
+            self.log.info('added target {}'.format(target))
+            return True
+        else:
+            self.log.warn('asked to add target {} which does not exist'.format(target))
+            return False
 
     def drop_weights(self):
         dico = {}
         for layer in self.struct:
             if self.struct[layer][0] == True:
-                ### Should reshape weights here?
-                dico[layer] = self.struct[layer][1].get_weights().reshape(self.struct[layer][2])
+                self.get_layer_weight(layer, dico)
         return dico
 
+    def get_layer_weight(self, layer, dico):
+        weights = self.struct[layer][1].get_weights()
+        tmp = {}
+        for i in range(weights.shape[1]):
+            i_th_filter = weights[:,i]
+            self.log.debug('[MAIN THREAD] i_th_filter type: {}'.format(type(i_th_filter)))
+            self.log.debug('[MAIN THREAD] i_th_filter shape: {}'.format(i_th_filter.shape))
+            tmp[str(i)] = i_th_filter.reshape(self.struct[layer][2])
+            self.log.debug('[MAIN THREAD] print_dico[str(i)].shape: {}'.format(tmp[str(i)].shape))
+        dico[layer]=tmp
