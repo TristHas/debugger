@@ -1,17 +1,20 @@
 import os
 
-V_SILENT        = 0
-V_WARN          = 1
-V_INFO          = 2
-V_VERBOSE       = 3
-V_DEBUG         = 4
+V_SILENT        = -1
+V_HISTORY       = 0
+V_ERROR         = 1
+V_WARN          = 2
+V_INFO          = 3
+V_VERBOSE       = 4
+V_DEBUG         = 5
 
+LOCAL_ROOT_DIR  = '/Users/d-fr-mac0002/Desktop/vision/debugger'
+DEPLOY_DIR      = '/tmp/debugger/deploy'
 DATA_DIR        = '/tmp/debugger/data'
 LOG_DIR         = '/tmp/debugger/data/log'
 ###
 ###     Directory
 ###
-# Ubuntu /home/tristan/workspace/perf
 
 ###
 ###     Net communication
@@ -26,17 +29,21 @@ PWD             = 'Altran2014'
 ###     Logging
 ###
 V_SILENT                = -1
-V_ERROR                 = 0
-V_WARN                  = 1
-V_INFO                  = 2
-V_VERBOSE               = 3
-V_DEBUG                 = 4
+V_HISTORY               = 0
+V_ERROR                 = 1
+V_WARN                  = 2
+V_INFO                  = 3
+V_VERBOSE               = 4
+V_DEBUG                 = 5
+
 DATA_LOG_FILE           = os.path.join(LOG_DIR, 'server_data.log')
 SERV_LOG_FILE           = os.path.join(LOG_DIR, 'server_ctrl.log')
 CLIENT_LOG_FILE         = os.path.join(LOG_DIR, 'client_ctrl.log')
-SGD_LOG_FILE            = os.path.join(LOG_DIR, 'main_lgd.log')
+CTRL_LOG_FILE           = os.path.join(LOG_DIR, 'control_window.log')
 PRINT_LOG_FILE          = os.path.join(LOG_DIR, 'client_print.log')
 DATA_CLIENT_LOG_FILE    = os.path.join(LOG_DIR, 'client_data.log')
+TRAINER_LOG_FILE        = os.path.join(LOG_DIR, 'trainer.log')
+MODEL_LOG_FILE          = os.path.join(LOG_DIR, 'model.log')
 
 ###
 ###     DEFAULT var

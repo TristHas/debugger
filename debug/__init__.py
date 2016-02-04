@@ -11,4 +11,3 @@
 
 import util
 import core
-import theano_mnist_lgd

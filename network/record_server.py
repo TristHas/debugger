@@ -42,6 +42,9 @@ log.info('[SERV PROC] DATA Thread instantiated')
 ####    ServerFunctions
 ####
 def start_record(connection, msg):
+    """
+
+    """
     target = msg[2]
     client_address = connection.getpeername()
     if target not in connection_table[connection]:

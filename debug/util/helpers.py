@@ -11,6 +11,14 @@ class Logger():
         self.file = open(filename, 'w')
         self.real_time = real_time
 
+    def hist(self, mess):
+        if self.lev >= V_HISTORY:
+            message = "[H]{}:{}\n".format(time.time(), mess)
+            self.file.write(message)
+            if self.real_time:
+                self.file.flush()
+                os.fsync(self.file)
+
     def warn(self, mess):
         if self.lev >= V_WARN:
             message = "[W]{}:{}\n".format(time.time(), mess)
@@ -42,6 +50,15 @@ class Logger():
             if self.real_time:
                 self.file.flush()
                 os.fsync(self.file)
+
+    def error(self, mess):
+        if self.lev >= V_ERROR:
+            message = "[E]{}:{}\n".format(time.time(), mess)
+            self.file.write(message)
+            if self.real_time:
+                self.file.flush()
+                os.fsync(self.file)
+
 
 def list_to_csv(input):
     return CSV_SEP.join(map(str,input))

@@ -3,7 +3,8 @@
 
 import cProfile
 #from printer import main
-from ..theano_mnist_lgd import sgd_optimization_mnist
+def main():
+    pass
 
 if __name__ == '__main__':
-    cProfile.run('sgd_optimization_mnist()')
+    cProfile.run('main')

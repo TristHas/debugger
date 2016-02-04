@@ -9,6 +9,79 @@ from data_processing import DataProcessor
 import socket, threading, select, Queue, json
 import time, sys, argparse
 
+
+class LocalClient(object):
+    def __init__(self, trainer):
+        self.trainer = trainer
+
+    def start_training(self):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.start_training()
+
+    def stop_training(self):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.stop_training()
+
+    def pause_training(self):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.pause_training()
+
+    def resume_training(self):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.resume_training()
+
+    def add_target(self, target = None):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.add_target(target)
+
+    def remove_target(self, target = None):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.remove_target(target)
+
+    def start_record(self):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.start_record()
+
+    def stop_record(self):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.stop_record()
+
+    def load_model_weights(self, weight_file = None):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.load_model_weights(weight_file)
+
+    def set_parameter(self, parameter, value):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.set_parameter(parameter, value)
+
+    def get_parameter(self, parameter):
+        '''
+            Calls trainer's so named method
+        '''
+        return self.trainer.get_parameter(parameter)
+
+
+
 class LightClient(object):
     def __init__(self, ip, transmit):
         if not os.path.isdir(DATA_DIR):
@@ -24,7 +97,6 @@ class LightClient(object):
         self.targets = {}
         # Workers
         self.data_client = DataClient(transmit, ip)
-        #self.data_processor = DataProcessor(transmit, self.headers, self.targets)
         # Connection
         self.connect(ip)
 
@@ -175,6 +247,29 @@ class LightClient(object):
     def stop_all(self):
         self.stop_process()
         send_data(self.soc_ctrl, STOP_ALL)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def parserArguments(parser):

@@ -5,6 +5,12 @@ import theano
 import numpy as np
 from theano import tensor as T
 
+
+###
+###     All Layers should provide:
+###     get_weights, get_bias, and standard_init methods
+
+
 class fullyConnectedLayer(object):
     """Multi-class Logistic Regression Class
 
@@ -31,9 +37,13 @@ class fullyConnectedLayer(object):
                       which the labels lie
 
         """
+
+        self.layerType = 'full'
+        self.dim = (n_in, n_out)
+        self.input = input
         self.W = theano.shared(
             value=np.zeros(
-                (n_in, n_out),
+                (self.dim[0], self.dim[1]),
                 dtype=theano.config.floatX
             ),
             name='W',
@@ -41,19 +51,45 @@ class fullyConnectedLayer(object):
         )
         self.b = theano.shared(
             value=np.zeros(
-                (n_out,),
+                (self.dim[1],),
                 dtype=theano.config.floatX
             ),
             name='b',
             borrow=True
         )
-
-        self.input = input
+        ### Try and see what happens if we put those 2 lines in the __init__
         self.params = [self.W, self.b]
         self.output = T.nnet.softmax(T.dot(self.input, self.W) + self.b)
 
+
     def get_weights(self):
+        """
+            DOC
+        """
         return self.W.get_value()
 
     def get_biass(self):
+        """
+            DOC
+        """
         return self.b.get_value()
+
+    def standard_init(self):
+        """
+            DOC
+        """
+        try:
+            W = np.zeros(
+                (self.dim[0], self.dim[1]),
+                dtype=theano.config.floatX
+            )
+            b =np.zeros(
+                (self.dim[1],),
+                dtype=theano.config.floatX
+            )
+            self.b.set_value(b)
+            self.W.set_value(W)
+        except IndexError as e:
+            return False
+        return True
+
