@@ -17,7 +17,10 @@ class NLL_Trainer(object):
     """
         DOC
     """
-    def __init__(self, transmit, model, train_set, valid_set, test_set, batch_size = 600, learning_rate = 0.13, cost = None, test_func = None):
+    def __init__(   self, transmit, model, train_set, valid_set, test_set,
+                    batch_size = 600, learning_rate = 0.13, cost = None, test_func = None,
+                    regularization_factor = 0
+                ):
         """
             DOC
         """
@@ -34,6 +37,7 @@ class NLL_Trainer(object):
         self.test_set = test_set
 
         self.batch_size = theano.shared(0)
+        self.reg        = theano.shared(regularization_factor)
         self.set_batch_size(batch_size)
 
         self.validation_frequency = self.n_train_batches
@@ -50,6 +54,8 @@ class NLL_Trainer(object):
         self.nll  = -T.mean(T.log(self.model.output)[T.arange(self.labels.shape[0]), self.labels])
         if not cost:
             cost = self.nll
+        else:
+            cost = cost + self.reg #* racine(somme(Poids au carrés))
 
         g_params  = (T.grad(cost=cost, wrt=param) for param in self.model.params)
         updates   = [(param, param - self.learning_rate * g_param) for param, g_param in zip(self.model.params, g_params)]
@@ -107,6 +113,7 @@ class NLL_Trainer(object):
         """
             Training loop
         """
+        minibatch_avg_cost = 0
         best_validation_loss = numpy.inf
         test_score = 0.
         # time ne prends pas en compte les pauses/resume
@@ -118,19 +125,20 @@ class NLL_Trainer(object):
                 time.sleep(1)
             epoch = epoch + 1
             for minibatch_index in xrange(self.n_train_batches):                            # minibatch_index within an epoch
-                minibatch_avg_cost = self.train_model(minibatch_index)
+                minibatch_avg_cost += self.train_model(minibatch_index)
                 iter = (epoch - 1) * self.n_train_batches + minibatch_index                 # Iter = number of minibatch passed
                 if (iter + 1) % self.record_frequency == 0 and self.is_recording:
                     data = self.model.drop_weights()
                     if data:
-                        print 'Transmitting'
                         self.transmit.put(data)
                     else:
                         print 'WHAT WENT WRONG? EMPTY DATA DROPPEND BY MODEL IN TRAINER'
 
                 if (iter + 1) % self.validation_frequency == 0:
+                    training_score = minibatch_avg_cost / self.validation_frequency
+                    minibatch_avg_cost = 0
                     this_validation_loss = self.validate_model_1()
-                    print(
+                    self.log.info(
                         'epoch %i, minibatch %i/%i, validation error %f %%' %
                         (
                             epoch,
@@ -139,6 +147,16 @@ class NLL_Trainer(object):
                             this_validation_loss * 100.
                         )
                     )
+                    self.log.verb(
+                        'epoch %i, minibatch %i/%i, training scor %f %%' %
+                        (
+                            epoch,
+                            minibatch_index + 1,
+                            self.n_train_batches,
+                            training_score
+                        )
+                    )
+
 
                     if this_validation_loss < best_validation_loss or True:
                         best_validation_loss = this_validation_loss
@@ -147,7 +165,7 @@ class NLL_Trainer(object):
                         test_losses = [self.test_model(i) for i in xrange(self.n_test_batches)]
                         test_score = numpy.mean(test_losses)
 
-                        print(
+                        self.log.info(
                             (
                                 '     epoch %i, minibatch %i/%i, test error of'
                                 ' best model %f %%'
@@ -161,16 +179,16 @@ class NLL_Trainer(object):
                         )
 
         end_time = timeit.default_timer()
-        print(
+        self.log.info(
             (
                 'Optimization complete with best validation score of %f %%,'
                 'with test performance %f %%'
             )
             % (best_validation_loss * 100., test_score * 100.)
         )
-        print 'The code run for %d epochs, with %f epochs/sec' % (
-            epoch, 1. * epoch / (end_time - start_time))
-        print >> sys.stderr, ('The code for file ' +
+        self.log.info('The code run for %d epochs, with %f epochs/sec' % (
+            epoch, 1. * epoch / (end_time - start_time)))
+        self.log.info('The code for file ' +
                               os.path.split(__file__)[1] +
                               ' ran for %.1fs' % ((end_time - start_time)))
 
@@ -305,4 +323,8 @@ class NLL_Trainer(object):
         except AttributeError as e:
             self.log.error('Error Getting parameter {}: {}'.format(parameter, e))
             return None
+
+
+#    def drop_input(self, label):
+#        data = train_set[0].get_value()[10,:]
 

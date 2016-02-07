@@ -188,7 +188,7 @@ class ControlWindow(QWidget):
             val = self.client.load_model_weights()
             return True
         else:
-            val = self.client.load_model_weights(arguments[2])
+            val = self.client.load_model_weights(arguments[1])
             self.log.info('Return code {}'.format(val))
             return val
 

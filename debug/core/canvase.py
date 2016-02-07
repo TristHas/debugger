@@ -4,6 +4,8 @@ from ..util.helpers import Logger
 from ..util.conf import *
 from vispy import gloo, app
 import numpy as np
+
+import math
 import threading
 import Queue
 
@@ -74,7 +76,6 @@ void main()
     else {
         gl_FragColor = vec4(0., 0., -4* clr, 1.);
     }
-    //gl_FragColor.a = 1.0;
 }
 """
 
@@ -137,11 +138,10 @@ class Processor(object):
         """
         # Once we know the kind of order we are able to make,
         # we should find heuristics to compute them
-        if target[0] == 'solo':
-            if target[1] == 0:
-                if target[2] == -1:
-                    ret_val = self.process_simple_lgd(data)
-        return ret_val
+        if target[0] == 0 and target[1] == None and target[2] == -1:
+            return self.process_simple_lgd(data)
+        else:
+            return False
 
     def process_data(self, data):
         """
@@ -216,3 +216,60 @@ class Canvas(app.Canvas):
     def on_resize(self, event):
         width, height = event.size
         gloo.set_viewport(0, 0, width, height)
+
+def create_table_centers(n_col, n_row):
+    """
+        DOC
+    """
+    y_coords = 1/float(n_row) * (np.arange(n_row) + 0.5)
+    x_coords = 1/float(n_col) * (np.arange(n_col) + 0.5)
+    return np.transpose([np.tile(x_coords, len(y_coords)), np.repeat(y_coords, len(x_coords))])
+
+def build_frames(centers, width, height ):
+    """
+    DOC
+    """
+    n_item = centers.shape[0]
+    dim = np.array([width, height])
+    tex_index = np.array([  [0, 0],
+                            [1, 0],
+                            [0, 1],
+                            [1, 1],
+                        ])
+    vertices_shift = 0.5 * np.array([   [- width, - height],
+                                        [width, -height],
+                                        [-width, height],
+                                        [width, height],
+                                    ])
+    vertices = np.repeat(centers, 4, 0) + np.tile(vertices_shift, (n_item, 1))
+    tex_ind_temp = np.tile(tex_index, (n_item, 1))
+    print tex_ind_temp.shape
+    print vertices.shape
+    textures =  np.concatenate((vertices, tex_ind_temp), axis = 1)
+    indices = np.tile([0,1,2,1,2,3], n_item) + np.repeat( 4 * np.arange(n_item), 6)
+    return vertices, indices, textures
+
+def create_col_row(n_item, n_row = None):
+    if n_row is None:
+        n_col = float(math.ceil(math.sqrt(n_item)))
+        n_row = math.ceil(n_item / n_col)
+    else:
+        n_row = float(n_row)
+        n_col = float(math.ceil(float(n_item) / n_row))
+    return n_col, n_row
+
+def create_table(n_item, n_row = None, inter_space = 0.9):
+    """
+        DOC
+    """
+    # Compute rows/columns
+    n_col, n_row = create_col_row(n_item, n_row)
+
+    # Compute centers
+    centers = create_table_centers(n_row, n_col)
+    centers = centers[:n_item, :]
+
+    # Compute vertexes
+    width, height = 1/float(n_col) * inter_space, 1/float(n_row) * inter_space
+    vertices, indices, textures = build_frames(centers, width, height)
+    return vertices, indices, textures
