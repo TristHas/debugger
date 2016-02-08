@@ -12,15 +12,6 @@ from debugger.network.client import LightClient, LocalClient
 from vispy import app, use
 use(app = 'PyQt5')
 
-###
-###     Easy_client
-###
-
-def main():
-    x = app.Application()
-    qt_app = x.native
-    sys.exit(qt_app.exec_())
-
 if __name__ == '__main__':
     app.set_interactive()
 
@@ -86,4 +77,25 @@ def show(layer, cumul=None, nodeId = -1):
             print ('Client Target Add Failed for  {}'.format(target))
     else:
         print ('Target {} asked whereas allready in target control list'.format(target))
+
+def quit():
+    c.stop_running()
+    sys.exit()
+
+def print_set():
+    from matplotlib import pyplot as plt
+    y = x.transpose().reshape(10, 28, 28)
+    plt.imshow(y[2,:,:])
+    plt.show()
+
+show(0)
+x = train_set[0].get_value()[:10,:].T
+dico = {0:x}
+transmit.put(dico)
+
+
+
+
+
+
 
