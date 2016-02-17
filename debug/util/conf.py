@@ -40,10 +40,12 @@ DATA_LOG_FILE           = os.path.join(LOG_DIR, 'server_data.log')
 SERV_LOG_FILE           = os.path.join(LOG_DIR, 'server_ctrl.log')
 CLIENT_LOG_FILE         = os.path.join(LOG_DIR, 'client_ctrl.log')
 CTRL_LOG_FILE           = os.path.join(LOG_DIR, 'control_window.log')
-PRINT_LOG_FILE          = os.path.join(LOG_DIR, 'client_print.log')
+CANVAS_LOG_FILE         = os.path.join(LOG_DIR, 'canvas.log')
+PROCESSOR_LOG_FILE      = os.path.join(LOG_DIR, 'processor.log')
 DATA_CLIENT_LOG_FILE    = os.path.join(LOG_DIR, 'client_data.log')
 TRAINER_LOG_FILE        = os.path.join(LOG_DIR, 'trainer.log')
 MODEL_LOG_FILE          = os.path.join(LOG_DIR, 'model.log')
+
 
 ###
 ###     DEFAULT var

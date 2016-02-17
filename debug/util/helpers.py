@@ -60,6 +60,57 @@ class Logger():
                 os.fsync(self.file)
 
 
+import timeit, time
+class WithTimer:
+    def __init__(self, title = '', quiet = False):
+        self.title = title
+        self.quiet = quiet
+
+    def elapsed(self):
+        return time.time() - self.wall, time.clock() - self.proc
+
+    def enter(self):
+        '''Manually trigger enter'''
+        self.__enter__()
+
+    def __enter__(self):
+        self.proc = time.clock()
+        self.wall = time.time()
+        return self
+
+    def __exit__(self, *args):
+        if not self.quiet:
+            titlestr = (' ' + self.title) if self.title else ''
+            print 'Elapsed%s: wall: %.06f, sys: %.06f' % ((titlestr,) + self.elapsed())
+
+class Timer:
+    def __init__(self):
+        self.acc = {}
+        self.rep = {}
+
+    def time(self, func, *args):
+        start = timeit.default_timer()
+        result = func(*args)
+        end = timeit.default_timer()
+        if func not in self.acc:
+            self.acc[func] = 0
+            self.rep[func] = 0
+        self.acc[func] += end - start
+        self.rep[func] += 1
+        return result
+
+    def get_avg_time(self, func):
+        if func not in self.acc:
+            return None
+        else:
+            return self.acc[func] / self.rep[func]
+
+    def get_total_time(self, func):
+        if func not in self.acc:
+            return None
+        else:
+            return self.acc[func]
+
 def list_to_csv(input):
     return CSV_SEP.join(map(str,input))
 

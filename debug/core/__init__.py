@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import canvase
+import canvas
 import control_window
+import processor

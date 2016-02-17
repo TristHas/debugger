@@ -9,7 +9,7 @@ import theano.tensor as T
 import theano
 import numpy
 from ..debug.util.conf import *
-from ..debug.util.helpers import Logger
+from ..debug.util.helpers import Logger, WithTimer, Timer
 from models import LogisticModel
 
 
@@ -57,12 +57,13 @@ class NLL_Trainer(object):
         else:
             cost = cost + self.reg #* racine(somme(Poids au carrés))
 
-        g_params  = (T.grad(cost=cost, wrt=param) for param in self.model.params)
+        g_params  = [T.grad(cost=cost, wrt=param) for param in self.model.params]
         updates   = [(param, param - self.learning_rate * g_param) for param, g_param in zip(self.model.params, g_params)]
 
         self.train_model = theano.function(
             inputs=[self.index],
-            outputs=cost,
+            outputs=[cost] + g_params,
+            #outputs = cost,
             updates=updates,
             givens={
                 model.input: self.train_set[0][self.index * self.batch_size: (self.index + 1) * self.batch_size],
@@ -108,11 +109,11 @@ class NLL_Trainer(object):
         assert self.labels.ndim == self.model.pred.ndim
         return T.mean(T.neq(self.model.pred, self.labels))
 
-
     def _training_process(self):
         """
             Training loop
         """
+        timer = Timer()
         minibatch_avg_cost = 0
         best_validation_loss = numpy.inf
         test_score = 0.
@@ -125,10 +126,17 @@ class NLL_Trainer(object):
                 time.sleep(1)
             epoch = epoch + 1
             for minibatch_index in xrange(self.n_train_batches):                            # minibatch_index within an epoch
-                minibatch_avg_cost += self.train_model(minibatch_index)
+                res = timer.time(self.train_model, minibatch_index)
+                cost = res[0]
+                #print res[1].shape
+                #self.transmit.put({0:res[1] * 10})
+                minibatch_avg_cost += cost
                 iter = (epoch - 1) * self.n_train_batches + minibatch_index                 # Iter = number of minibatch passed
                 if (iter + 1) % self.record_frequency == 0 and self.is_recording:
                     data = self.model.drop_weights()
+                    #print type(data)
+                    #print len(data)
+                    #print data[0].shape
                     if data:
                         self.transmit.put(data)
                     else:
@@ -137,7 +145,7 @@ class NLL_Trainer(object):
                 if (iter + 1) % self.validation_frequency == 0:
                     training_score = minibatch_avg_cost / self.validation_frequency
                     minibatch_avg_cost = 0
-                    this_validation_loss = self.validate_model_1()
+                    this_validation_loss = timer.time(self.validate_model_1)
                     self.log.info(
                         'epoch %i, minibatch %i/%i, validation error %f %%' %
                         (
@@ -191,6 +199,9 @@ class NLL_Trainer(object):
         self.log.info('The code for file ' +
                               os.path.split(__file__)[1] +
                               ' ran for %.1fs' % ((end_time - start_time)))
+
+        print 'Validation: avg time = {}  ||  total time = {}'.format(timer.get_avg_time(self.validate_model_1), timer.get_total_time(self.validate_model_1))
+        print 'Training: avg time = {}  ||  total time = {}'.format(timer.get_avg_time(self.train_model), timer.get_total_time(self.train_model))
 
         ###
         ###     Should any value be reinitalised?

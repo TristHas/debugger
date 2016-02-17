@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from layers import fullyConnectedLayer
+from layers import fullyConnectedLayer, logRegLayer
 import numpy as np
 from ..debug.util.helpers import Logger
 from ..debug.util.conf import *
 from theano import tensor as T
 
-
 #   A model should define the following functions:
-#
 #       - add_targets
 #       - remove_targets
 #       - drop_weights
@@ -20,29 +18,13 @@ from theano import tensor as T
 #       - output
 #       - dim
 
-class LogisticModel(object):
-    def __init__(self, input_shape, n_out):
+class BaseModel(object):
+    def __init__(self):
         '''
             DOC
         '''
         self.log = Logger(MODEL_LOG_FILE)
-        n_in = np.prod(input_shape)
         self.input = T.matrix('x')
-
-        # Build model architecture
-        ####
-        ####        ARCH
-        ####
-        self.l_0 = fullyConnectedLayer(self.input, n_in, n_out)
-        self.struct = {0: [False, self.l_0, self.l_0.layerType, (n_in, n_out)]}
-        # Parameters
-        self.params = []
-        for layer in self.struct:
-            self.params.extend(self.struct[layer][1].params)
-
-        # Selects the index of the highest output
-        self.output = self.l_0.output
-        self.pred = T.argmax(self.output, axis=1)
 
     def add_target(self, target = None):
         '''
@@ -105,4 +87,56 @@ class LogisticModel(object):
         '''
             DOC
         '''
-        return all( self.struct[layer][1].standard_init() for layer in self.struct)
+        return all(self.struct[layer][1].standard_init() for layer in self.struct)
+
+
+class LogisticModel(BaseModel):
+    def __init__(self, input_shape, n_out):
+        '''
+            DOC
+        '''
+        super(LogisticModel, self).__init__()
+        n_in = np.prod(input_shape)
+
+        # Build model architecture
+        ####
+        ####        ARCH
+        ####
+        self.l_0 = logRegLayer(self.input, n_in, n_out)
+        self.struct = {0: [False, self.l_0, self.l_0.layerType, (n_in, n_out)]}
+        # Parameters
+        self.params = []
+        for layer in self.struct:
+            self.params.extend(self.struct[layer][1].params)
+
+        # Selects the index of the highest output
+        self.output = self.l_0.output
+        self.pred = T.argmax(self.output, axis=1)
+
+class MLPModel(BaseModel):
+    def __init__(self, input_shape, n_hidden, n_out):
+        '''
+            DOC
+        '''
+        super(MLPModel, self).__init__()
+        n_in = np.prod(input_shape)
+        # Build model architecture
+        ####
+        ####        ARCH
+        ####
+        self.l_0 = fullyConnectedLayer(self.input, n_in, n_hidden)
+        self.l_1 = logRegLayer(self.l_0.output, n_hidden, n_out)
+        self.struct = { 0: [False, self.l_0, self.l_0.layerType, (n_in, n_hidden)],
+                        1: [False, self.l_1, self.l_1.layerType, (n_hidden, n_out)],
+                      }
+        # Parameters
+        self.params = []
+        for layer in self.struct:
+            self.params.extend(self.struct[layer][1].params)
+
+        # Selects the index of the highest output
+        self.output = self.l_1.output
+        self.pred = T.argmax(self.output, axis=1)
+
+
+

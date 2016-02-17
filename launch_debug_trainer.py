@@ -3,10 +3,11 @@
 
 import Queue, sys
 import debugger
-from debugger.debug.core.canvase import Canvas, Processor
+from debugger.debug.core.canvas import Canvas
+from debugger.debug.core.processor import Processor
 from debugger.debug.core.control_window import ControlWindow
 from debugger.debug.util.mnist_loader import load_data
-from debugger.models.models import LogisticModel
+from debugger.models.models import LogisticModel, MLPModel
 from debugger.models.trainer import NLL_Trainer
 from debugger.network.client import LightClient, LocalClient
 from vispy import app, use
@@ -15,15 +16,21 @@ use(app = 'PyQt5')
 if __name__ == '__main__':
     app.set_interactive()
 
+
+train_set, valid_set, test_set = load_data('mnist.pkl.gz')
+
 transmit = Queue.Queue()
 targets = {}
-p = Processor(targets)
-c = Canvas(transmit, p)
-train_set, valid_set, test_set = load_data('mnist.pkl.gz')
-model = LogisticModel(input_shape=(28, 28), n_out=10)
+struct = {  0: [20, (28, 28)],
+            1: [10, (4, 5)],
+}
+
+#model = LogisticModel(input_shape=(28, 28), n_out=10)
+model = MLPModel(input_shape=(28, 28), n_hidden = 20, n_out=10)
 trainer = NLL_Trainer(transmit, model, train_set, valid_set, test_set)
 client = LocalClient(trainer)
-p.set_model_struct(model.struct)
+p = Processor(targets, struct)
+c = Canvas(transmit, p)
 
 ###
 ###     Aliases
@@ -35,7 +42,7 @@ bs = 'batch_size'
 ###     Commands
 ###
 def get(param):
-    client.get_parameter(param)
+    return client.get_parameter(param)
 
 def set(param, value):
     client.set_parameter(param, value)
@@ -53,7 +60,7 @@ def resume():
     client.resume_training()
 
 def load(weight_file = None):
-    client.load_model_weights(weight_file)
+    return client.load_model_weights(weight_file)
 
 def show(layer, cumul=None, nodeId = -1):
     if cumul is None:
@@ -64,9 +71,8 @@ def show(layer, cumul=None, nodeId = -1):
     if not target in targets:
         add_target = all(client.add_target(x) for x in layers)
         if add_target:
-            order_success = p.order(target)
+            order_success = p.order(target, layers)
             if order_success:
-                targets[target] = layers
                 client.start_record()
                 print ('Successfully added target {}'.format(target))
             else:
@@ -80,7 +86,7 @@ def show(layer, cumul=None, nodeId = -1):
 
 def quit():
     c.stop_running()
-    sys.exit()
+    exit()
 
 def print_set():
     from matplotlib import pyplot as plt
@@ -88,11 +94,11 @@ def print_set():
     plt.imshow(y[2,:,:])
     plt.show()
 
-show(0)
-x = train_set[0].get_value()[:10,:].T
+#show(0)
+x = train_set[0].get_value()[:20,:].T
 dico = {0:x}
-transmit.put(dico)
-
+#transmit.put(dico)
+print 'Ready!'
 
 
 
