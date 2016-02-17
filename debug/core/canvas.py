@@ -24,6 +24,7 @@ void main (void) {
     gl_Position = vec4(positions.x, positions.y, 0, 1);
 }
 """
+
 FRAG_SHADER = """
 // texture fragment shader
 uniform sampler3D u_texture;
@@ -109,8 +110,10 @@ class Canvas(app.Canvas):
 
     def on_draw(self, event):
         gloo.clear()
-        self._program.draw('triangles', self.indices)
-        #self._program.draw('points')
+        if self.processor._check_integrity():
+            self._program.draw('triangles', self.indices)
+        else:
+            log.error('processor integrity check failed before drawing')
 
     def on_resize(self, event):
         width, height = event.size

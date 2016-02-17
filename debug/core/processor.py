@@ -2,35 +2,57 @@
 # -*- coding: utf-8 -*-
 from indexing import *
 from ..util.helpers import Logger
+from ..util.math import *
 from ..util.conf import *
 from vispy.gloo import IndexBuffer
 import numpy as np
+import itertools
+from threading import Lock
 
 log = Logger(PROCESSOR_LOG_FILE, V_DEBUG, real_time = True)
 reshape_table = {0: (28,28),
                  1: (4, 5)
                 }
-num_texture   = len(reshape_table)
+
+### Need a State class?
 
 class Panes(object):
     def __init__(self):
         self.data = {}
 
     def add_target(self, target, old_item, new_item):
-        # Compute old and new target
+        """
+            DOC
+        """
         tex_ids     = range(old_item, new_item)
         positions   = range(old_item * 4, new_item * 4)
         tex_indices = range(old_item * 4, new_item * 4)
         indices     = range(old_item * 6, new_item * 6)
         all_indices = tex_ids, positions, indices, tex_indices
         self.data[target] = all_indices
-        log.info('[MAIN] Pane added for target {}: {}'.format(target, all_indices))
+        log.info('[MAIN] Pane added for target {}'.format(target))
 
-    def get(self, target):
+    def get_texture_id(self, target):
+        """
+            DOC
+        """
         if target not in self.data:
             return None
         else:
-            return self.data[target]
+            return self.data[target][0]
+
+    def registered_targets(self):
+        """
+            DOC
+        """
+        return self.data.keys()
+
+    def check_integrity(self):
+        """
+            DOC
+        """
+        data = [self.get_texture_id(layer) for layer in self.registered_targets()]
+        return is_contiguous_set(data)
 
 class Processor(object):
     """
@@ -47,6 +69,8 @@ class Processor(object):
         self.texindex       = None
         self.panes          = Panes()
         self.n_item         = 0
+        self.lock           = Lock()
+        self.state          = 'numb'
         log.info('[MAIN] Processor Initialised')
 
     def update_panes(self, target):
@@ -65,7 +89,8 @@ class Processor(object):
             new_indices        = indices
             new_texindex       = texindex
             textures           = np.random.rand(n_item, *shape).astype(np.float32) - 0.5
-            # Now we consider all textures should be resized to fit the input layer format
+            # For now we consider all textures should be resized to fit the input layer format
+            # This should be updated when new sampling methods are done
             new_texture        = resize_nearest(textures, reshape_table[0])
         elif not all_set:
             log.error('processor positions, indices textures and texindex are set for some but not for all')
@@ -101,19 +126,38 @@ class Processor(object):
         self.n_item         = self.n_item + n_item
         self.panes.add_target(target, n_old_item, self.n_item)
 
-
         # Notify it is ready for change pane display update
         self._log_shapes()
         self.has_updated = True
 
     def _log_shapes(self):
         """
-            Should log instead of print
+            Verbose logging of the indices and textures shape + integrity
         """
         log.verb("self.positions.shape= {}".format(self.positions.shape))
         log.verb("self.indices.shape= {}".format(self.indices.shape))
         log.verb("self.texindex.shape= {}".format(self.texindex.shape))
         log.verb("self.textures.shape= {}".format(self.textures.shape))
+        log.verb("integrity= {}".format(self._check_integrity()))
+
+    def _check_integrity(self):
+        """
+            Returns True if all indices, textures and panes have coherent shapes.
+            Returns False otherwise
+        """
+        try:
+            c = [False, False, False, False, False]
+            c[0] = self.positions.shape   == (self.n_item * 4, 2)
+            c[1] = self.indices.shape     == (self.n_item * 6,)
+            c[2] = self.texindex.shape    == (self.n_item * 4, 3)
+            c[3] = self.textures.shape    == (self.n_item, reshape_table[0][0], reshape_table[0][1])
+            c[4] = self.panes.check_integrity()
+        except AttributeError:
+            log.error('Check integrity failed with on AttributeError'.format(c))
+        if not all(c):
+            log.error('Check integrity failed with status {}. Setting state to numb'.format(c))
+            self.state = 'numb'
+        return all(c)
 
     def order(self, target, layers):
         """
@@ -122,8 +166,10 @@ class Processor(object):
             to Canvas. The canvas deals with the computation of the vertices.
 
         """
-        self.update_panes(target)
-        self.targets[target] = layers
+        # Failure cases?
+        with self.lock:
+            self.update_panes(target)
+            self.targets[target] = layers
         return True
 
     def set_model_struct(self, struct):
@@ -135,11 +181,10 @@ class Processor(object):
         pass
 
     def get_processable_targets(self, data):
+        """
+        """
         ret = []
         for target in self.targets:
-            log.debug('data.keys() = {}'.format(data.keys()))
-            log.debug('self.targets[target] = {}'.format(self.targets[target]))
-            log.debug('all = {}'.format(all(layer in self.targets[target] for layer in data.keys())))
             if all(layer in data.keys() for layer in self.targets[target]):
                 ret.append(target)
         return ret
@@ -154,19 +199,19 @@ class Processor(object):
         n_item      = data.shape[1]
         new_shape   = [n_item] + list(reshape_table[layer_id])
         new_texture = data.transpose().astype(np.float32)
-        #print "layer_id={}".format(layer_id)
-        #print reshape_table[layer_id]
-        #print new_shape
-        #print new_texture.shape
         new_texture = new_texture.reshape(new_shape)
         new_texture = resize_nearest(new_texture, reshape_table[0])
 
         ### UPDATE TEXTURES
-        tex_range = self.panes.get(target)[0]
-        #print tex_range
+        tex_range = self.panes.get_texture_id(target)
         self._log_shapes()
         self.textures[tex_range,:,:] = new_texture
-        log.debug('x shape ={}'.format(new_texture.shape))
+        log.debug(
+            'Layer {} texture: shape={}, valeur max={}, valeur min={}'.format(layer_id,
+                                                                              new_texture.shape,
+                                                                              np.max(new_texture),
+                                                                              np.min(new_texture))
+                  )
         log.debug('max(data)={}'.format(np.max(new_texture)))
         log.debug('min(data)={}'.format(np.min(new_texture)))
         return True
@@ -175,20 +220,31 @@ class Processor(object):
         """
             Target structure is ['solo/cumul', layerName, nodeId]
         """
-        # Once we know the kind of order we are able to make,
-        # we should find heuristics to compute them
-        if target[1] == None:
-            if target[0] in self.struct:
-                log.debug('processing target {}'.format(target))
-                return self.process_base_layer(data, target)
+        if target[0] in self.struct:
+            if target[1] == None:
+                if target[2] != -1:
+                    #TODO: Demander à ne pas visualiser tous les poids de la layer mais seulement certains
+                    log.error('Not yet implemented node only display target: {}'.format(target))
+                    #TODO: return False. For test purpose we still process it as normal
+                    return self.process_base_layer(data, target)
+                else:
+                    # TODO: Handle different kind of layer
+                    log.debug('processing target {}'.format(target))
+                    return self.process_base_layer(data, target)
+            else:
+                # TODO: Cumul des poids
+                log.error('Not yet implemented cumul display target {}'.format(target))
+                return False
         else:
+            log.error('Layer not available. Asked for target {} but struct is {}'.format(target, self.struct))
             return False
 
     def process_data(self, data):
         """
             Process data received from the queue.
         """
-        processable_targets = self.get_processable_targets(data)
-        log.debug('Processor found targets {} processable with data {}'.format(processable_targets, data.keys()))
-        for target in processable_targets:
-            processed_textures = self.process_target(data, target)
+        with self.lock:
+            processable_targets = self.get_processable_targets(data)
+            log.debug('Targets {} are processable with received data {}'.format(processable_targets, data.keys()))
+            for target in processable_targets:
+                processed_textures = self.process_target(data, target)

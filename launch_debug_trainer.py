@@ -1,24 +1,25 @@
 ##!/usr/bin/env python
 ## -*- coding: utf-8 -*-
 
-import Queue, sys
-import debugger
+
 from debugger.debug.core.canvas import Canvas
 from debugger.debug.core.processor import Processor
 from debugger.debug.core.control_window import ControlWindow
 from debugger.debug.util.mnist_loader import load_data
+from debugger.debug.util.conf import *
 from debugger.models.models import LogisticModel, MLPModel
 from debugger.models.trainer import NLL_Trainer
 from debugger.network.client import LightClient, LocalClient
 from vispy import app, use
 use(app = 'PyQt5')
+import Queue, sys
 
 if __name__ == '__main__':
     app.set_interactive()
 
 
+log = Logger(CTRL_LOG_FILE)
 train_set, valid_set, test_set = load_data('mnist.pkl.gz')
-
 transmit = Queue.Queue()
 targets = {}
 struct = {  0: [20, (28, 28)],
@@ -74,15 +75,15 @@ def show(layer, cumul=None, nodeId = -1):
             order_success = p.order(target, layers)
             if order_success:
                 client.start_record()
-                print ('Successfully added target {}'.format(target))
+                log.info('Successfully added target {}'.format(target))
             else:
                 ##TODO: Should remove targets from client
-                print ("Order failed")
+                log.error("Processor Order failed")
         else:
             ##TODO: Should remove targets from client
-            print ('Client Target Add Failed for  {}'.format(target))
+            log.error('Client Target Add Failed for  {}'.format(target))
     else:
-        print ('Target {} asked whereas allready in target control list'.format(target))
+        log.error('Target {} asked whereas allready in target control list'.format(target))
 
 def quit():
     c.stop_running()
@@ -94,7 +95,6 @@ def print_set():
     plt.imshow(y[2,:,:])
     plt.show()
 
-#show(0)
 x = train_set[0].get_value()[:20,:].T
 dico = {0:x}
 #transmit.put(dico)

@@ -59,7 +59,6 @@ class Logger():
                 self.file.flush()
                 os.fsync(self.file)
 
-
 import timeit, time
 class WithTimer:
     def __init__(self, title = '', quiet = False):
