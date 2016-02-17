@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from debugger.conf import *
+from conf import *
 from fabric.api import run, cd, env, put, get
 import time, os
-from ..debug.util.conf import *
+
 
 def deploy_server(ip = IP_1):
     env.user        = LOGIN

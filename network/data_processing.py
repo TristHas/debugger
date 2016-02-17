@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from debugger.debug.util.conf import *
-from debugger.debug.util.helpers import Logger, list_to_csv
-from Queue import Empty
-import shutil, os
-import threading
+from debugger.conf import *
+from debugger.logging import Logger
+from helpers import list_to_csv
+from debugger.conf import *
+
 import json
+from Queue import Empty
+import threading
+import shutil, os
 
 
 class DataProcessor(object):

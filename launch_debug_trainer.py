@@ -1,22 +1,20 @@
 ##!/usr/bin/env python
 ## -*- coding: utf-8 -*-
 
-
-from debugger.debug.core.canvas import Canvas
-from debugger.debug.core.processor import Processor
-from debugger.debug.core.control_window import ControlWindow
-from debugger.debug.util.mnist_loader import load_data
-from debugger.debug.util.conf import *
+from debugger.logging import Logger
+from debugger.core.canvas import Canvas
+from debugger.core.processor import Processor
+from debugger.io import load_data
+from debugger.conf import *
 from debugger.models.models import LogisticModel, MLPModel
 from debugger.models.trainer import NLL_Trainer
-from debugger.network.client import LightClient, LocalClient
+from debugger.network.client import RemoteClient, LocalClient
 from vispy import app, use
 use(app = 'PyQt5')
 import Queue, sys
 
 if __name__ == '__main__':
     app.set_interactive()
-
 
 log = Logger(CTRL_LOG_FILE)
 train_set, valid_set, test_set = load_data('mnist.pkl.gz')

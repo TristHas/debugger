@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+###
+###
+###
+###
+###
+###                 DEPRECATED
+###
+###
+###
+###
+###
+###
+
+
+
+
 from debugger.debug.util.mnist_loader import load_data
 from debugger.debug.util.helpers import Logger
 from debugger.debug.util.conf import *

@@ -5,7 +5,7 @@ import cPickle, gzip
 import theano
 import theano.tensor as T
 import numpy
-from conf import *
+from debugger.conf import *
 
 def load_data(dataset):
     ''' Loads the dataset

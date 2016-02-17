@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from ..util.helpers import Logger
-from ..util.conf import *
+from debugger.logging import Logger
+from debugger.conf import *
 from vispy import gloo, app
 import numpy as np
 import threading
@@ -12,6 +12,7 @@ log = Logger(CANVAS_LOG_FILE, V_DEBUG, real_time = True)
 ###
 ###     SHADERS
 ###
+
 VERT_SHADER = """
 // vertex shader
 

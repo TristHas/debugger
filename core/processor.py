@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from indexing import *
-from ..util.helpers import Logger
-from ..util.math import *
-from ..util.conf import *
+from debugger.logging import Logger
+from debugger.util.math import *
+from debugger.conf import *
 from vispy.gloo import IndexBuffer
 import numpy as np
 import itertools

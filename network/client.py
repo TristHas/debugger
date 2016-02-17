@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from debugger.debug.util.conf import *
-from debugger.debug.util.helpers import Logger, send_data, recv_data
-#from printer import print_dic, init_print
+from debugger.conf import *
+from debugger.logging import Logger
+from conf import *
+from helpers import send_data, recv_data
 from data_client import DataClient
 from data_processing import DataProcessor
 import socket, threading, select, Queue, json
@@ -82,7 +83,7 @@ class LocalClient(object):
 
 
 
-class LightClient(object):
+class RemoteClient(object):
     def __init__(self, ip, transmit):
         if not os.path.isdir(DATA_DIR):
             os.makedirs(DATA_DIR)

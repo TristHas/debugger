@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
+from debugger.conf import *
+from debugger.logging import Logger
+from conf import *
+from helpers import send_data, recv_data
 import socket, threading
-from debugger.debug.util.helpers import Logger, send_data, recv_data
-from debugger.debug.util.conf import *
+import os
+
 
 class DataClient(object):
     def __init__(self, queue, ip):

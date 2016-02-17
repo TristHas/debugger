@@ -1,15 +1,15 @@
 import numpy as np
 import time
 import matplotlib
-matplotlib.use('GTKAgg')
+#matplotlib.use('GTKAgg')
 from matplotlib import pyplot as plt
-from helpers import Logger
-from conf import *
+from debugger.logging import Logger
+from debugger.conf import *
 
 N_COL = 2
 PRINT_AXIS = range(15)
 
-log = Logger(PRINT_LOG_FILE, V_DEBUG, real_time = True)
+log = Logger(UTIL_FILE, V_DEBUG, real_time = True)
 
 def multi_init_fast(data):
     print_data = {}

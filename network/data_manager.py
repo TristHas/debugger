@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from debugger.debug.util.conf import *
-from debugger.debug.util.helpers import Logger, send_data, list_to_csv
+from debugger.conf import *
+from debugger.logging import Logger
+from helpers import send_data, list_to_csv
+from conf import *
 import threading, socket, time
 import json
 import os

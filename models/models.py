@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 from layers import fullyConnectedLayer, logRegLayer
 import numpy as np
-from ..debug.util.helpers import Logger
-from ..debug.util.conf import *
+from debugger.logging import Logger
+from debugger.conf import *
 from theano import tensor as T
 
 #   A model should define the following functions:

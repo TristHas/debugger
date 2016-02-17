@@ -1,10 +1,12 @@
-from data_manager import DataManager
-from debugger.debug.util.conf import *
-from debugger.debug.util.helpers import *
-from debugger.debug.util.mnist_loader import load_data
 
+from debugger.conf import *
+from debugger.Logging import Logger
+from debugger.debug.util.mnist_loader import load_data
 from debugger.models.models import LogisticModel
 from debugger.models.trainer import NLL_Trainer
+from conf import *
+from data_manager import DataManager
+from helpers import *
 
 import argparse, time, os, sys
 import socket, select

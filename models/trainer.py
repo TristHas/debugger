@@ -8,8 +8,9 @@ import threading
 import theano.tensor as T
 import theano
 import numpy
-from ..debug.util.conf import *
-from ..debug.util.helpers import Logger, WithTimer, Timer
+from debugger.conf import *
+from debugger.logging import Logger
+from debugger.perf import Timer
 from models import LogisticModel
 
 
