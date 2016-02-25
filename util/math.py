@@ -35,3 +35,7 @@ def is_contiguous_set(data):
             return data == should_be
         else:
             raise TypeError('is_contiguous_set function received argument {} of type {}'.format(data, type(data)))
+
+def union(data):
+    sets = to_list_of_sets(data)
+    return set.union(*sets)

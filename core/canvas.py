@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 from debugger.logging import Logger
 from debugger.conf import *
-from vispy import gloo, app
+from vispy import gloo, app, use
 import numpy as np
 import threading
 import Queue
 
 log = Logger(CANVAS_LOG_FILE, V_DEBUG, real_time = True)
+use(app = 'PyQt5')
 
 ###
 ###     SHADERS
@@ -50,11 +51,10 @@ class Canvas(app.Canvas):
         app.Canvas.__init__(self)
         gloo.set_state(clear_color=(0.0, 0.0, 0.0, 1.00))
         self.processor = processor
-        # Process Thread Control.
+        # Process Thread Control
         self.running = False
         self.printing = True
         self.transmit = transmit
-
         # Program definition
         self._program = gloo.Program(VERT_SHADER, FRAG_SHADER)
         self._program['a_texindex'] = [[[0,0,0]]]
@@ -95,8 +95,12 @@ class Canvas(app.Canvas):
     def process_loop(self):
         while self.running:
             try:
-                # Synchronisation problem if order is passed and data received while waiting for queue timeout?
-                # Should time the process_panes method for performance
+                ### Another way to do it:
+                ### Processor pulls from the queue and updates a state value
+                ### In parallel, This jusrt repeatedly check for the state variable and
+                ### displays when needed.
+                ### It would decorellate the processing time of both modules.
+                ### But it seems like much effort for nothing
                 self.process_panes()
                 data = self.transmit.get(timeout = 0.5)
                 self.processor.process_data(data)

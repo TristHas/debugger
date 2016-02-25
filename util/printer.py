@@ -2,7 +2,7 @@ import numpy as np
 import time
 import matplotlib
 #matplotlib.use('GTKAgg')
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from debugger.logging import Logger
 from debugger.conf import *
 

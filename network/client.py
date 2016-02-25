@@ -13,73 +13,63 @@ import time, sys, argparse
 
 class LocalClient(object):
     def __init__(self, trainer):
-        self.trainer = trainer
+        self.trainer_ctrl = trainer
 
     def start_training(self):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.start_training()
+        return self.trainer_ctrl.start()
 
     def stop_training(self):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.stop_training()
+        return self.trainer_ctrl.stop()
 
-    def pause_training(self):
+    def add_target(self, target, layer):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.pause_training()
-
-    def resume_training(self):
-        '''
-            Calls trainer's so named method
-        '''
-        return self.trainer.resume_training()
-
-    def add_target(self, target = None):
-        '''
-            Calls trainer's so named method
-        '''
-        return self.trainer.add_target(target)
+        return self.trainer_ctrl.new_order(target, layer)
 
     def remove_target(self, target = None):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.remove_target(target)
+        return self.trainer_ctrl.cancel_order(target)
 
     def start_record(self):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.start_record()
+        #return self.trainer.start_record()
+        pass
 
     def stop_record(self):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.stop_record()
+        pass
+        #return self.trainer.stop_record()
 
     def load_model_weights(self, weight_file = None):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.load_model_weights(weight_file)
+        return self.trainer_ctrl.load_weight(weight_file)
 
     def set_parameter(self, parameter, value):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.set_parameter(parameter, value)
+        return self.trainer_ctrl.set_parameter(parameter, value)
 
     def get_parameter(self, parameter):
         '''
             Calls trainer's so named method
         '''
-        return self.trainer.get_parameter(parameter)
+        return self.trainer_ctrl.get_parameter(parameter)
 
 
 

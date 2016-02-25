@@ -10,8 +10,8 @@ import itertools
 from threading import Lock
 
 log = Logger(PROCESSOR_LOG_FILE, V_DEBUG, real_time = True)
-reshape_table = {0: (28,28),
-                 1: (4, 5)
+reshape_table = {'1.W': (28,28),
+                 '2.W': (4, 5)
                 }
 
 ### Need a State class?
@@ -57,7 +57,8 @@ class Panes(object):
 class Processor(object):
     """
         The processor handles all the Preprocessing of the data before display.
-        the controler sends it the model structure and the orders to display.
+
+
     """
     def __init__(self, targets, struct):
         self.has_updated     = False
@@ -74,10 +75,14 @@ class Processor(object):
         log.info('[MAIN] Processor Initialised')
 
     def update_panes(self, target):
+        """
+            Terrible. Need to reviex the whole thing
+        """
         log.info('[MAIN] Updating panes')
-        layer_id    = target[0]
-        n_item      = self.struct[layer_id][0]
-        shape       = self.struct[layer_id][1]
+        layer_id    = self.targets[target][0]
+        print target[0]
+        n_item      = self.struct[target[0]][0]
+        shape       = self.struct[target[0]][1]
         vertices, indices, texindex = create_table(n_item)
         log.info('[MAIN] tables created')
         none_set = not any((self.positions is not None, self.indices is not None,self.textures is not None, self.texindex is not None))
@@ -91,7 +96,7 @@ class Processor(object):
             textures           = np.random.rand(n_item, *shape).astype(np.float32) - 0.5
             # For now we consider all textures should be resized to fit the input layer format
             # This should be updated when new sampling methods are done
-            new_texture        = resize_nearest(textures, reshape_table[0])
+            new_texture        = resize_nearest(textures, reshape_table['1.W'])
         elif not all_set:
             log.error('processor positions, indices textures and texindex are set for some but not for all')
         else:
@@ -113,7 +118,7 @@ class Processor(object):
             # Init and fuse textures
             dimz = [n_item] + list(shape)
             textures = np.zeros(dimz, dtype = np.float32) - 0.5
-            new_texture = resize_nearest(textures, reshape_table[0])
+            new_texture = resize_nearest(textures, reshape_table['1.W'])
             new_texture = np.concatenate((self.textures, new_texture), axis = 0)
 
         # Apply Computed changes
@@ -150,7 +155,7 @@ class Processor(object):
             c[0] = self.positions.shape   == (self.n_item * 4, 2)
             c[1] = self.indices.shape     == (self.n_item * 6,)
             c[2] = self.texindex.shape    == (self.n_item * 4, 3)
-            c[3] = self.textures.shape    == (self.n_item, reshape_table[0][0], reshape_table[0][1])
+            c[3] = self.textures.shape    == (self.n_item, reshape_table['1.W'][0], reshape_table['1.W'][1])
             c[4] = self.panes.check_integrity()
         except AttributeError:
             log.error('Check integrity failed with on AttributeError'.format(c))
@@ -168,8 +173,8 @@ class Processor(object):
         """
         # Failure cases?
         with self.lock:
-            self.update_panes(target)
             self.targets[target] = layers
+            self.update_panes(target)
         return True
 
     def set_model_struct(self, struct):
@@ -194,13 +199,13 @@ class Processor(object):
             DOC
         """
         ### RESHAPE
-        layer_id    = target[0]
+        layer_id    = self.targets[target][0]
         data        = data[layer_id]
         n_item      = data.shape[1]
         new_shape   = [n_item] + list(reshape_table[layer_id])
         new_texture = data.transpose().astype(np.float32)
         new_texture = new_texture.reshape(new_shape)
-        new_texture = resize_nearest(new_texture, reshape_table[0])
+        new_texture = resize_nearest(new_texture, reshape_table['1.W'])
 
         ### UPDATE TEXTURES
         tex_range = self.panes.get_texture_id(target)
@@ -220,9 +225,9 @@ class Processor(object):
         """
             Target structure is ['solo/cumul', layerName, nodeId]
         """
-        if target[0] in self.struct:
-            if target[1] == None:
-                if target[2] != -1:
+        if target[0] in self.struct:        # Is the layer really a part of the model?
+            if target[1] == None:           # No cumul
+                if target[2] != -1:         # Display not whole layer
                     #TODO: Demander à ne pas visualiser tous les poids de la layer mais seulement certains
                     log.error('Not yet implemented node only display target: {}'.format(target))
                     #TODO: return False. For test purpose we still process it as normal

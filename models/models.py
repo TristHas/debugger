@@ -57,6 +57,7 @@ class BaseModel(object):
         dico = {}
         for layer in self.struct:
             if self.struct[layer][0] == True:
+                # Drop bias?
                 self.get_layer_weight(layer, dico)
         return dico
 
@@ -64,6 +65,7 @@ class BaseModel(object):
         '''
             DOC
         '''
+        # Drop bias?
         weights = self.struct[layer][1].get_weights()
         dico[layer]=weights
 
@@ -126,8 +128,8 @@ class MLPModel(BaseModel):
         ####
         self.l_0 = fullyConnectedLayer(self.input, n_in, n_hidden)
         self.l_1 = logRegLayer(self.l_0.output, n_hidden, n_out)
-        self.struct = { 0: [False, self.l_0, self.l_0.layerType, (n_in, n_hidden)],
-                        1: [False, self.l_1, self.l_1.layerType, (n_hidden, n_out)],
+        self.struct = { 1: [False, self.l_0, self.l_0.layerType, (n_in, n_hidden)],
+                        2: [False, self.l_1, self.l_1.layerType, (n_hidden, n_out)],
                       }
         # Parameters
         self.params = []
